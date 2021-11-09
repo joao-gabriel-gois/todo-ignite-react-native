@@ -1,24 +1,31 @@
-import React from 'react';
-import { FlatList, Image, TouchableOpacity, View, Text, StyleSheet, FlatListProps } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { FlatList, Image, TouchableOpacity, View, Text, StyleSheet, FlatListProps, TextInput, TimePickerAndroid } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 
 import { ItemWrapper } from './ItemWrapper';
 
 import trashIcon from '../assets/icons/trash/trash.png'
+import closeIcon from '../assets/icons/close/close.png';
+import editIcon from '../assets/icons/edit/edit.png';
 
 export interface Task {
   id: number;
   title: string;
   done: boolean;
+  editable: boolean;
 }
 
 interface TasksListProps {
   tasks: Task[];
   toggleTaskDone: (id: number) => void;
   removeTask: (id: number) => void;
+  turnTaskEditable: (id: number) => void;
+  editTask: (id: number, newTitle: string) => void;
 }
 
-export function TasksList({ tasks, toggleTaskDone, removeTask }: TasksListProps) {
+export function TasksList({ tasks, toggleTaskDone, removeTask, turnTaskEditable, editTask }: TasksListProps) {
+  const [ currentEditableTask, setCurrentEditableTask ] = useState('');
+
   return (
     <FlatList
       data={tasks}
@@ -31,7 +38,7 @@ export function TasksList({ tasks, toggleTaskDone, removeTask }: TasksListProps)
             <View>
               <TouchableOpacity
                 testID={`button-${index}`}
-                activeOpacity={0.7}
+                activeOpacity={item.editable ? 1 : 0.7}
                 style={styles.taskButton}
                 //TODO - use onPress (toggle task) prop
                 onPress={() => toggleTaskDone(item.id)}
@@ -48,23 +55,52 @@ export function TasksList({ tasks, toggleTaskDone, removeTask }: TasksListProps)
                     />
                   )}
                 </View>
-
-                <Text 
-                 style={item.done ? styles.taskTextDone : styles.taskText}
-                >
-                  {item.title}
-                </Text>
+                {
+                  item.editable ? 
+                    <TextInput 
+                      style={[styles.taskText, {marginVertical: -8, color: '#888' }]}
+                      placeholder={item.title}
+                      onChangeText={setCurrentEditableTask}
+                      onSubmitEditing={() => editTask(item.id, currentEditableTask)}        
+                    /> 
+                  :
+                    <Text 
+                      style={item.done ? styles.taskTextDone : styles.taskText}
+                    >
+                      {item.title}
+                    </Text>
+                }
               </TouchableOpacity>
             </View>
 
-            <TouchableOpacity
-              testID={`trash-${index}`}
-              style={{ paddingHorizontal: 24 }}
-              //TODO - use onPress (remove task) prop
-              onPress={() => removeTask(item.id)}
-            >
-              <Image source={trashIcon} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center'}}>
+              <TouchableOpacity
+                testID={`edit-${index}`}
+                style={{ paddingHorizontal: 12 }}
+                //TODO - use onPress (edit task) prop
+                onPress={() => turnTaskEditable(item.id)}
+              >
+                <Image
+                  source={item.editable ? closeIcon : editIcon}
+                  style={item.editable ? {marginRight: 6, marginBottom: 2}: {}}
+                />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                testID={`trash-${index}`}
+                style={{ marginRight: 6 }}
+                activeOpacity={
+                  item.editable ? 1 : .7
+                }
+                //TODO - use onPress (remove task) prop
+                onPress={() => removeTask(item.id)}
+              >
+                <Image 
+                  source={trashIcon} 
+                  style={item.editable ? { opacity: .3 } : {}}  
+                />
+              </TouchableOpacity>
+            </View>
           </ItemWrapper>
         )
       }}
@@ -97,7 +133,12 @@ const styles = StyleSheet.create({
   },
   taskText: {
     color: '#666',
-    fontFamily: 'Inter-Medium'
+    fontFamily: 'Inter-Medium',
+    padding:0,
+    margin:0,
+    fontSize: 14,
+    lineHeight: 15,
+    width: '67%',
   },
   taskMarkerDone: {
     height: 16,
