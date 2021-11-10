@@ -38,6 +38,11 @@ export function Home() {
   }
 
   function handleEditTask(id: number, newTitle: string) {
+    if (tasks.find(task => task.title === newTitle)) {
+      Alert.alert('Task já existe!', 'Edite essa tarefa com título diferente das anteriores');
+      return;
+    }
+    
     const newTasks = tasks.map(task => {
       if (task.id === id) {
         return {
